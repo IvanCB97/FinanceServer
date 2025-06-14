@@ -89,6 +89,7 @@ docker-compose up -d
 
 InfluxDB 2.7 exposes a web UI on `http://localhost:8086` using the credentials `admin/adminadmin`. The instance is preconfigured with organization `myorg`, bucket `finance`, and token `mytoken`. Grafana runs on `http://localhost:3000` (default login `admin/admin`).
 
+
 Add InfluxDB as a data source in Grafana using URL `http://influxdb:8086`, organization `myorg`, bucket `finance`, and the token `mytoken` to visualize optimizer statistics.
 
 ### Storing results in InfluxDB

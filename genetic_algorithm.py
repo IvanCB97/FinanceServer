@@ -3,7 +3,8 @@ import configparser
 import os
 import random
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
+from influxdb import InfluxDBClient
 
 @dataclass
 class Asset:
@@ -15,7 +16,8 @@ class GeneticAlgorithm:
     def __init__(self, assets: List[Asset], population_size: int = 50,
                  generations: int = 200, crossover_rate: float = 0.7,
                  mutation_rate: float = 0.1, elitism: int = 2,
-                 selection_type: str = "roulette"):
+                 selection_type: str = "roulette",
+                 influx_client: Optional[InfluxDBClient] = None):
         self.assets = assets
         self.population_size = population_size
         self.generations = generations
@@ -23,6 +25,7 @@ class GeneticAlgorithm:
         self.mutation_rate = mutation_rate
         self.elitism = elitism
         self.selection_type = selection_type
+        self.influx_client = influx_client
         self.chromosome_length = len(assets)
 
     def _random_chromosome(self) -> List[float]:
@@ -38,6 +41,19 @@ class GeneticAlgorithm:
         Opt = (2 * (1 - R) * G) / ((1 - R) + G)
         return Opt
 
+    def _log_generation(self, generation: int, best: List[float], score: float):
+        if not self.influx_client:
+            return
+        point = {
+            "measurement": "genetic_algorithm",
+            "tags": {"generation": generation},
+            "fields": {asset.name: weight for asset, weight in zip(self.assets, best)}
+        }
+        point["fields"]["score"] = score
+        try:
+            self.influx_client.write_points([point])
+        except Exception:
+            pass
     def _mutate(self, chromosome: List[float]):
         idx = random.randrange(self.chromosome_length)
         change = random.uniform(-0.1, 0.1)
@@ -71,8 +87,10 @@ class GeneticAlgorithm:
 
     def run(self):
         population = [self._random_chromosome() for _ in range(self.population_size)]
-        for _ in range(self.generations):
+        for gen in range(self.generations):
             graded = sorted(population, key=self._fitness, reverse=True)
+            best = graded[0]
+            self._log_generation(gen, best, self._fitness(best))
             next_population = graded[:self.elitism]
             while len(next_population) < self.population_size:
                 parent1 = self._select_parent(graded)
@@ -83,6 +101,7 @@ class GeneticAlgorithm:
                 next_population.append(child)
             population = next_population
         best = max(population, key=self._fitness)
+        self._log_generation(self.generations, best, self._fitness(best))
         return best, self._fitness(best)
 
 def parse_args():
@@ -97,6 +116,11 @@ def parse_args():
     parser.add_argument("--mutation", type=float, default=0.1)
     parser.add_argument("--elitism", type=int, default=2)
     parser.add_argument("--selection", choices=["roulette", "tournament"], default="roulette")
+    parser.add_argument("--influxdb-host", default="localhost")
+    parser.add_argument("--influxdb-port", type=int, default=8086)
+    parser.add_argument("--influxdb-user", default="admin")
+    parser.add_argument("--influxdb-password", default="admin")
+    parser.add_argument("--influxdb-db", default="finance")
     return parser.parse_args()
 
 
@@ -114,6 +138,13 @@ def main():
             args.mutation = float(section.get('mutation_rate', args.mutation))
             args.selection = section.get('selection', args.selection)
             args.elitism = int(section.get('elitism', args.elitism))
+        if 'INFLUXDB' in config:
+            section = config['INFLUXDB']
+            args.influxdb_host = section.get('host', args.influxdb_host)
+            args.influxdb_port = int(section.get('port', args.influxdb_port))
+            args.influxdb_user = section.get('user', args.influxdb_user)
+            args.influxdb_password = section.get('password', args.influxdb_password)
+            args.influxdb_db = section.get('db', args.influxdb_db)
     assets = [
         Asset("VUSA", args.vusa_return, args.vusa_risk),
         Asset("CNDX", args.cndx_return, args.cndx_risk),
@@ -122,6 +153,17 @@ def main():
         Asset("EIMI", args.eimi_return, args.eimi_risk),
     ]
 
+    influx = None
+    try:
+        influx = InfluxDBClient(
+            host=args.influxdb_host,
+            port=args.influxdb_port,
+            username=args.influxdb_user,
+            password=args.influxdb_password,
+            database=args.influxdb_db,
+        )
+    except Exception:
+        influx = None
     ga = GeneticAlgorithm(
         assets,
         population_size=args.population,
@@ -130,6 +172,7 @@ def main():
         mutation_rate=args.mutation,
         elitism=args.elitism,
         selection_type=args.selection,
+        influx_client=influx,
     )
 
     best, score = ga.run()

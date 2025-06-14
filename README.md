@@ -104,3 +104,34 @@ python3 genetic_algorithm.py --config gen.conf \
 ```
 
 The `gen.conf` file also includes an `[INFLUXDB]` section with the server `url`, access `token`, `org`, and `bucket`. Metrics will be written to the `finance` bucket automatically.
+
+### Makefile helpers
+
+A `Makefile` simplifies creating a virtual environment and managing the Docker services.
+
+Run `make setup` to create a Python virtual environment in `venv/` and install the dependencies from `requirements.txt`.
+
+```bash
+make setup
+```
+
+Once the environment is ready, you can start InfluxDB and Grafana with:
+
+```bash
+make start
+```
+
+Stop the services at any time with:
+
+```bash
+make stop
+```
+
+To remove the containers and delete the virtual environment, run:
+
+```bash
+make clean
+```
+
+After running `make setup`, the optimizer can be launched using `venv/bin/python`.
+

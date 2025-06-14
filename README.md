@@ -30,13 +30,13 @@ python3 genetic_algorithm.py \
   --cndx-return 0.15 --cndx-risk 0.4 \
   --aiq-return 0.12 --aiq-risk 0.25 \
   --vaneckdefense-return 0.05 --vaneckdefense-risk 0.5 \
-  --eimi-return 0.2 --eimi-risk 0.45 \
-  --generations 200 --population 50
+  --eimi-return 0.2 --eimi-risk 0.45
 ```
 
 Command line options allow customization of genetic algorithm parameters such as
-population size, number of generations, crossover and mutation rates, elitism,
-and the selection method (roulette or tournament).
+crossover and mutation rates, elitism, selection method, population size, and
+number of generations. These values can also be specified in `gen.conf`, which
+overrides the defaults and can be overridden again by command-line arguments.
 
 The script outputs the best allocation and its optimized score.
 
@@ -54,6 +54,16 @@ crossover_rate = 0.8
 mutation_rate = 0.05
 selection = tournament
 elitism = 2
+```
+
+An `[INFLUXDB]` section can configure the connection to the database:
+
+```ini
+[INFLUXDB]
+url = http://localhost:8086
+token = mytoken
+org = myorg
+bucket = finance
 ```
 
 Run the optimizer specifying the config file:
@@ -77,9 +87,9 @@ A `docker-compose.yml` file is provided to spin up an InfluxDB instance and Graf
 docker-compose up -d
 ```
 
-InfluxDB will be available on `http://localhost:8086` with database `finance` and credentials `admin/admin`. Grafana runs on `http://localhost:3000` (default login `admin/admin`).
+InfluxDB 2.7 exposes a web UI on `http://localhost:8086` using the credentials `admin/admin`. The instance is preconfigured with organization `myorg`, bucket `finance`, and token `mytoken`. Grafana runs on `http://localhost:3000` (default login `admin/admin`).
 
-Add InfluxDB as a data source in Grafana using the URL `http://influxdb:8086` and database `finance` to visualize optimizer statistics.
+Add InfluxDB as a data source in Grafana using URL `http://influxdb:8086`, organization `myorg`, bucket `finance`, and the token `mytoken` to visualize optimizer statistics.
 
 ### Storing results in InfluxDB
 
@@ -95,5 +105,4 @@ python3 genetic_algorithm.py --config gen.conf \
   --eimi-return 0.2 --eimi-risk 0.45
 ```
 
-The `gen.conf` file also includes an `[INFLUXDB]` section to configure connection settings. Metrics will be written to the `finance` database automatically.
-
+The `gen.conf` file also includes an `[INFLUXDB]` section with the server `url`, access `token`, `org`, and `bucket`. Metrics will be written to the `finance` bucket automatically.

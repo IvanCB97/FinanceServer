@@ -4,7 +4,8 @@ import os
 import random
 from dataclasses import dataclass
 from typing import List, Optional
-from influxdb import InfluxDBClient
+
+from influxdb_client import InfluxDBClient, Point
 
 @dataclass
 class Asset:
@@ -17,7 +18,9 @@ class GeneticAlgorithm:
                  generations: int = 200, crossover_rate: float = 0.7,
                  mutation_rate: float = 0.1, elitism: int = 2,
                  selection_type: str = "roulette",
-                 influx_client: Optional[InfluxDBClient] = None):
+                 influx_client: Optional[InfluxDBClient] = None,
+                 bucket: str = "",
+                 org: str = ""):
         self.assets = assets
         self.population_size = population_size
         self.generations = generations
@@ -26,6 +29,9 @@ class GeneticAlgorithm:
         self.elitism = elitism
         self.selection_type = selection_type
         self.influx_client = influx_client
+        self.bucket = bucket
+        self.org = org
+        self.write_api = influx_client.write_api() if influx_client else None
         self.chromosome_length = len(assets)
 
     def _random_chromosome(self) -> List[float]:
@@ -42,16 +48,14 @@ class GeneticAlgorithm:
         return Opt
 
     def _log_generation(self, generation: int, best: List[float], score: float):
-        if not self.influx_client:
+        if not self.write_api:
             return
-        point = {
-            "measurement": "genetic_algorithm",
-            "tags": {"generation": generation},
-            "fields": {asset.name: weight for asset, weight in zip(self.assets, best)}
-        }
-        point["fields"]["score"] = score
+        point = Point("genetic_algorithm").tag("generation", generation)
+        for asset, weight in zip(self.assets, best):
+            point.field(asset.name, float(weight))
+        point.field("score", float(score))
         try:
-            self.influx_client.write_points([point])
+            self.write_api.write(bucket=self.bucket, org=self.org, record=point)
         except Exception:
             pass
     def _mutate(self, chromosome: List[float]):
@@ -116,35 +120,40 @@ def parse_args():
     parser.add_argument("--mutation", type=float, default=0.1)
     parser.add_argument("--elitism", type=int, default=2)
     parser.add_argument("--selection", choices=["roulette", "tournament"], default="roulette")
-    parser.add_argument("--influxdb-host", default="localhost")
-    parser.add_argument("--influxdb-port", type=int, default=8086)
-    parser.add_argument("--influxdb-user", default="admin")
-    parser.add_argument("--influxdb-password", default="admin")
-    parser.add_argument("--influxdb-db", default="finance")
+    parser.add_argument("--influxdb-url", default="http://localhost:8086")
+    parser.add_argument("--influxdb-token", default="mytoken")
+    parser.add_argument("--influxdb-org", default="myorg")
+    parser.add_argument("--influxdb-bucket", default="finance")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    # defaults for GA parameters
+    population = args.population
+    generations = args.generations
+    crossover = args.crossover
+    mutation = args.mutation
+    elitism = args.elitism
+    selection = args.selection
     # Load configuration file if present
     config = configparser.ConfigParser()
     if os.path.exists(args.config):
         config.read(args.config)
         if 'GA' in config:
             section = config['GA']
-            args.population = int(section.get('population', args.population))
-            args.generations = int(section.get('generations', args.generations))
-            args.crossover = float(section.get('crossover_rate', args.crossover))
-            args.mutation = float(section.get('mutation_rate', args.mutation))
-            args.selection = section.get('selection', args.selection)
-            args.elitism = int(section.get('elitism', args.elitism))
+            population = int(section.get('population', population))
+            generations = int(section.get('generations', generations))
+            crossover = float(section.get('crossover_rate', crossover))
+            mutation = float(section.get('mutation_rate', mutation))
+            selection = section.get('selection', selection)
+            elitism = int(section.get('elitism', elitism))
         if 'INFLUXDB' in config:
             section = config['INFLUXDB']
-            args.influxdb_host = section.get('host', args.influxdb_host)
-            args.influxdb_port = int(section.get('port', args.influxdb_port))
-            args.influxdb_user = section.get('user', args.influxdb_user)
-            args.influxdb_password = section.get('password', args.influxdb_password)
-            args.influxdb_db = section.get('db', args.influxdb_db)
+            args.influxdb_url = section.get('url', args.influxdb_url)
+            args.influxdb_token = section.get('token', args.influxdb_token)
+            args.influxdb_org = section.get('org', args.influxdb_org)
+            args.influxdb_bucket = section.get('bucket', args.influxdb_bucket)
     assets = [
         Asset("VUSA", args.vusa_return, args.vusa_risk),
         Asset("CNDX", args.cndx_return, args.cndx_risk),
@@ -156,23 +165,24 @@ def main():
     influx = None
     try:
         influx = InfluxDBClient(
-            host=args.influxdb_host,
-            port=args.influxdb_port,
-            username=args.influxdb_user,
-            password=args.influxdb_password,
-            database=args.influxdb_db,
+            url=args.influxdb_url,
+            token=args.influxdb_token,
+            org=args.influxdb_org,
         )
     except Exception:
         influx = None
+
     ga = GeneticAlgorithm(
         assets,
-        population_size=args.population,
-        generations=args.generations,
-        crossover_rate=args.crossover,
-        mutation_rate=args.mutation,
-        elitism=args.elitism,
-        selection_type=args.selection,
+        population_size=population,
+        generations=generations,
+        crossover_rate=crossover,
+        mutation_rate=mutation,
+        elitism=elitism,
+        selection_type=selection,
         influx_client=influx,
+        bucket=args.influxdb_bucket,
+        org=args.influxdb_org,
     )
 
     best, score = ga.run()

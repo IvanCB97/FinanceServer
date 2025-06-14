@@ -1,16 +1,18 @@
 version: '3'
 services:
   influxdb:
-    image: influxdb:1.8
+    image: influxdb:2.7
     ports:
       - "8086:8086"
     volumes:
-      - influxdb-data:/var/lib/influxdb
+      - influxdb-data:/var/lib/influxdb2
     environment:
-      INFLUXDB_DB: finance
-      INFLUXDB_ADMIN_ENABLED: "true"
-      INFLUXDB_ADMIN_USER: admin
-      INFLUXDB_ADMIN_PASSWORD: admin
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: admin
+      DOCKER_INFLUXDB_INIT_ORG: myorg
+      DOCKER_INFLUXDB_INIT_BUCKET: finance
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: mytoken
   grafana:
     image: grafana/grafana:9.0.0
     ports:

@@ -137,5 +137,3 @@ make clean
 ```
 
 After setting up the environment (via `make` or `make setup`), the optimizer can be launched using `venv/bin/python`.
-
-

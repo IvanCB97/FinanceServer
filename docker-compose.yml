@@ -21,6 +21,10 @@ services:
       - influxdb
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: adminadmin
 volumes:
   influxdb-data:
   grafana-data:

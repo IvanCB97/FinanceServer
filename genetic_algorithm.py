@@ -58,6 +58,7 @@ class GeneticAlgorithm:
             self.write_api.write(bucket=self.bucket, org=self.org, record=point)
         except Exception:
             pass
+
     def _mutate(self, chromosome: List[float]):
         idx = random.randrange(self.chromosome_length)
         change = random.uniform(-0.1, 0.1)
@@ -136,6 +137,7 @@ def main():
     mutation = args.mutation
     elitism = args.elitism
     selection = args.selection
+
     # Load configuration file if present
     config = configparser.ConfigParser()
     if os.path.exists(args.config):

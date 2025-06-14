@@ -11,11 +11,11 @@ setup:
 	$(VENV)/bin/pip install -r requirements.txt
 
 start: setup
-	docker-compose up -d
+	docker compose up -d
 
 stop:
-	docker-compose down
+	docker compose down
 
 clean:
-	docker-compose down -v
+	docker compose down -v
 	rm -rf $(VENV)

@@ -84,7 +84,7 @@ Command-line arguments override values from the configuration file.
 A `docker-compose.yml` file is provided to spin up InfluxDB and Grafana. Grafana is automatically provisioned with an InfluxDB data source. Start the services with:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 InfluxDB 2.7 exposes a web UI on `http://localhost:8086` using the credentials `admin/adminadmin`. The instance is preconfigured with organization `myorg`, bucket `finance`, and token `mytoken`. Grafana runs on `http://localhost:3000` with login `admin/adminadmin` and is provisioned with a data source that points at the InfluxDB service.
@@ -137,3 +137,6 @@ make clean
 ```
 
 After setting up the environment (via `make` or `make setup`), the optimizer can be launched using `venv/bin/python`.
+
+
+

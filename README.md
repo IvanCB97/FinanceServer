@@ -56,6 +56,16 @@ selection = tournament
 elitism = 2
 ```
 
+An `[INFLUXDB]` section can configure the connection to the database:
+
+```ini
+[INFLUXDB]
+url = http://localhost:8086
+token = mytoken
+org = myorg
+bucket = finance
+```
+
 Run the optimizer specifying the config file:
 
 ```bash
@@ -77,9 +87,9 @@ A `docker-compose.yml` file is provided to spin up an InfluxDB instance and Graf
 docker-compose up -d
 ```
 
-InfluxDB will be available on `http://localhost:8086` with database `finance` and credentials `admin/admin`. Grafana runs on `http://localhost:3000` (default login `admin/admin`).
+InfluxDB 2.7 exposes a web UI on `http://localhost:8086` using the credentials `admin/admin`. The instance is preconfigured with organization `myorg`, bucket `finance`, and token `mytoken`. Grafana runs on `http://localhost:3000` (default login `admin/admin`).
 
-Add InfluxDB as a data source in Grafana using the URL `http://influxdb:8086` and database `finance` to visualize optimizer statistics.
+Add InfluxDB as a data source in Grafana using URL `http://influxdb:8086`, organization `myorg`, bucket `finance`, and the token `mytoken` to visualize optimizer statistics.
 
 ### Storing results in InfluxDB
 
@@ -95,4 +105,4 @@ python3 genetic_algorithm.py --config gen.conf \
   --eimi-return 0.2 --eimi-risk 0.45
 ```
 
-The `gen.conf` file also includes an `[INFLUXDB]` section to configure connection settings. Metrics will be written to the `finance` database automatically.
+The `gen.conf` file also includes an `[INFLUXDB]` section with the server `url`, access `token`, `org`, and `bucket`. Metrics will be written to the `finance` bucket automatically.

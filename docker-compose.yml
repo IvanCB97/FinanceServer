@@ -1,0 +1,30 @@
+version: '3'
+services:
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminadmin
+      DOCKER_INFLUXDB_INIT_ORG: myorg
+      DOCKER_INFLUXDB_INIT_BUCKET: finance
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: mytoken
+  grafana:
+    image: grafana/grafana:9.0.0
+    ports:
+      - "3000:3000"
+    depends_on:
+      - influxdb
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: adminadmin
+volumes:
+  influxdb-data:
+  grafana-data:

@@ -110,7 +110,7 @@ The `gen.conf` file also includes an `[INFLUXDB]` section with the server `url`,
 The included `Makefile` simplifies creating a virtual environment and managing the Docker services.
 It also checks that the required system packages are available.
 
-Run `make setup` to ensure `python3.12-env` and Docker are installed,
+Run `make setup` to ensure `python3-venv` and Docker are installed,
 create a Python virtual environment in `venv/`, and install the
 dependencies from `requirements.txt`.
 
@@ -137,4 +137,3 @@ make clean
 ```
 
 After running `make setup`, the optimizer can be launched using `venv/bin/python`.
-

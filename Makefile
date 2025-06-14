@@ -1,4 +1,5 @@
 VENV?=venv
+.DEFAULT_GOAL := start
 
 .PHONY: setup start stop clean
 

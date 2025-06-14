@@ -110,15 +110,15 @@ The `gen.conf` file also includes an `[INFLUXDB]` section with the server `url`,
 The included `Makefile` simplifies creating a virtual environment and managing the Docker services.
 It also checks that the required system packages are available.
 
-Run `make setup` to ensure `python3-venv` and Docker are installed,
-create a Python virtual environment in `venv/`, and install the
-dependencies from `requirements.txt`.
+Running `make` (or `make start`) ensures `python3-venv` and Docker are installed,
+creates a Python virtual environment in `venv/`, installs the
+dependencies from `requirements.txt`, and starts InfluxDB and Grafana:
 
 ```bash
-make setup
+make
 ```
 
-Once the environment is ready, you can start InfluxDB and Grafana with:
+You can start the services again later with:
 
 ```bash
 make start
@@ -136,4 +136,4 @@ To remove the containers and delete the virtual environment, run:
 make clean
 ```
 
-After running `make setup`, the optimizer can be launched using `venv/bin/python`.
+After setting up the environment (via `make` or `make setup`), the optimizer can be launched using `venv/bin/python`.

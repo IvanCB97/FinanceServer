@@ -96,3 +96,4 @@ python3 genetic_algorithm.py --config gen.conf \
 ```
 
 The `gen.conf` file also includes an `[INFLUXDB]` section to configure connection settings. Metrics will be written to the `finance` database automatically.
+

@@ -4,7 +4,6 @@ import os
 import random
 from dataclasses import dataclass
 from typing import List, Optional
-
 from influxdb import InfluxDBClient
 
 @dataclass
@@ -55,7 +54,6 @@ class GeneticAlgorithm:
             self.influx_client.write_points([point])
         except Exception:
             pass
-
     def _mutate(self, chromosome: List[float]):
         idx = random.randrange(self.chromosome_length)
         change = random.uniform(-0.1, 0.1)
@@ -166,7 +164,6 @@ def main():
         )
     except Exception:
         influx = None
-
     ga = GeneticAlgorithm(
         assets,
         population_size=args.population,

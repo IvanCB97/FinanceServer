@@ -93,6 +93,9 @@ class GeneticAlgorithm:
     def run(self):
         population = [self._random_chromosome() for _ in range(self.population_size)]
         for gen in range(self.generations):
+            # show progress so the user knows the algorithm is running
+            print(f"Generation {gen + 1}/{self.generations}", flush=True)
+
             graded = sorted(population, key=self._fitness, reverse=True)
             best = graded[0]
             self._log_generation(gen, best, self._fitness(best))

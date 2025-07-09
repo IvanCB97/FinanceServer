@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 import csv
 
+
 from influxdb_client import InfluxDBClient, Point
 
 @dataclass
@@ -23,6 +24,7 @@ class GeneticAlgorithm:
                  bucket: str = "",
                  org: str = "",
                  csv_path: Optional[str] = None):
+
         self.assets = assets
         self.population_size = population_size
         self.generations = generations
@@ -37,6 +39,7 @@ class GeneticAlgorithm:
         self.csv_path = csv_path
         self.csv_file = None
         self.csv_writer = None
+
         self.chromosome_length = len(assets)
 
     def _random_chromosome(self) -> List[float]:
@@ -152,6 +155,7 @@ def parse_args():
     parser.add_argument("--influxdb-bucket", default="finance")
     parser.add_argument("--csv-file", default="population.csv",
                         help="path to CSV file to log populations")
+
     return parser.parse_args()
 
 
@@ -178,6 +182,7 @@ def main():
             selection = section.get('selection', selection)
             elitism = int(section.get('elitism', elitism))
             args.csv_file = section.get('csv_file', args.csv_file)
+
         if 'INFLUXDB' in config:
             section = config['INFLUXDB']
             args.influxdb_url = section.get('url', args.influxdb_url)
@@ -214,6 +219,7 @@ def main():
         bucket=args.influxdb_bucket,
         org=args.influxdb_org,
         csv_path=args.csv_file,
+
     )
 
     best, score = ga.run()

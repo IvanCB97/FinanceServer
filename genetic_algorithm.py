@@ -4,6 +4,8 @@ import os
 import random
 from dataclasses import dataclass
 from typing import List, Optional
+import csv
+
 
 from influxdb_client import InfluxDBClient, Point
 
@@ -20,7 +22,9 @@ class GeneticAlgorithm:
                  selection_type: str = "roulette",
                  influx_client: Optional[InfluxDBClient] = None,
                  bucket: str = "",
-                 org: str = ""):
+                 org: str = "",
+                 csv_path: Optional[str] = None):
+
         self.assets = assets
         self.population_size = population_size
         self.generations = generations
@@ -32,6 +36,10 @@ class GeneticAlgorithm:
         self.bucket = bucket
         self.org = org
         self.write_api = influx_client.write_api() if influx_client else None
+        self.csv_path = csv_path
+        self.csv_file = None
+        self.csv_writer = None
+
         self.chromosome_length = len(assets)
 
     def _random_chromosome(self) -> List[float]:
@@ -58,6 +66,15 @@ class GeneticAlgorithm:
             self.write_api.write(bucket=self.bucket, org=self.org, record=point)
         except Exception:
             pass
+
+    def _log_population_csv(self, generation: int, population: List[List[float]]):
+        if not self.csv_writer:
+            return
+        for idx, chrom in enumerate(population):
+            row = [generation, idx]
+            row.extend([f"{gene:.6f}" for gene in chrom])
+            row.append(f"{self._fitness(chrom):.6f}")
+            self.csv_writer.writerow(row)
 
     def _mutate(self, chromosome: List[float]):
         idx = random.randrange(self.chromosome_length)
@@ -92,13 +109,18 @@ class GeneticAlgorithm:
 
     def run(self):
         population = [self._random_chromosome() for _ in range(self.population_size)]
+        if self.csv_path:
+            self.csv_file = open(self.csv_path, "w", newline="")
+            self.csv_writer = csv.writer(self.csv_file)
+            header = ["generation", "index"] + [a.name for a in self.assets] + ["fitness"]
+            self.csv_writer.writerow(header)
         for gen in range(self.generations):
             # show progress so the user knows the algorithm is running
             print(f"Generation {gen + 1}/{self.generations}", flush=True)
-
             graded = sorted(population, key=self._fitness, reverse=True)
             best = graded[0]
             self._log_generation(gen, best, self._fitness(best))
+            self._log_population_csv(gen, population)
             next_population = graded[:self.elitism]
             while len(next_population) < self.population_size:
                 parent1 = self._select_parent(graded)
@@ -110,6 +132,9 @@ class GeneticAlgorithm:
             population = next_population
         best = max(population, key=self._fitness)
         self._log_generation(self.generations, best, self._fitness(best))
+        self._log_population_csv(self.generations, population)
+        if self.csv_file:
+            self.csv_file.close()
         return best, self._fitness(best)
 
 def parse_args():
@@ -128,6 +153,9 @@ def parse_args():
     parser.add_argument("--influxdb-token", default="mytoken")
     parser.add_argument("--influxdb-org", default="myorg")
     parser.add_argument("--influxdb-bucket", default="finance")
+    parser.add_argument("--csv-file", default="population.csv",
+                        help="path to CSV file to log populations")
+
     return parser.parse_args()
 
 
@@ -153,6 +181,8 @@ def main():
             mutation = float(section.get('mutation_rate', mutation))
             selection = section.get('selection', selection)
             elitism = int(section.get('elitism', elitism))
+            args.csv_file = section.get('csv_file', args.csv_file)
+
         if 'INFLUXDB' in config:
             section = config['INFLUXDB']
             args.influxdb_url = section.get('url', args.influxdb_url)
@@ -188,6 +218,8 @@ def main():
         influx_client=influx,
         bucket=args.influxdb_bucket,
         org=args.influxdb_org,
+        csv_path=args.csv_file,
+
     )
 
     best, score = ga.run()

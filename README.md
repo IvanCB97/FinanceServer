@@ -38,7 +38,9 @@ crossover and mutation rates, elitism, selection method, population size, and
 number of generations. These values can also be specified in `gen.conf`, which
 overrides the defaults and can be overridden again by command-line arguments.
 
-The script outputs the best allocation and its optimized score.
+The script outputs the best allocation and its optimized score. It also writes
+each generation's population to a CSV file (`population.csv` by default), which
+contains the allocation weights and fitness of every individual.
 
 
 ### Configuration file
@@ -54,6 +56,7 @@ crossover_rate = 0.8
 mutation_rate = 0.05
 selection = tournament
 elitism = 2
+csv_file = population.csv
 ```
 
 An `[INFLUXDB]` section can configure the connection to the database:
